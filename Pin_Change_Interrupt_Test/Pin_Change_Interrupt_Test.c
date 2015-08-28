@@ -47,7 +47,7 @@ ISR (PCINT2_vect)
 	
 	// Timer0を起動
 	TCCR0B = 0x05;	// プリスケーラ：1024
-	TCNT0 = 80;		// about: 1ms	
+	TCNT0 = 40;		// about: 5ms	
 }
 
 int main(void)
@@ -69,7 +69,7 @@ int main(void)
 		PORTB &= ~(1 << i);
 		_delay_ms(100);
 	}
-	//PORTC = 0x00;
+	PORTC = 0x00;
 		
 	// Pin Change Interruptの有効化
 	PCICR = (1 << PCIE2);
