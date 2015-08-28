@@ -17,12 +17,37 @@
 #include <stdint.h>
 #include <util/delay.h>
 
+volatile uint8_t prevSwitch = 0x00;
+volatile uint8_t sdata = 0x00;
+
+ISR (TIMER0_OVF_vect)
+{
+	// Timer0を停止
+	TCCR0B = 0x00;
+		
+	uint8_t tmp = ~PIND;	// PINxレジスタの値はいったん変数に代入しないと比較がうまくいかない
+	if (prevSwitch == tmp) {
+		sdata ^= prevSwitch;
+		PORTB = sdata;
+	}
+		
+	// Pin Change Interruptの有効化
+	PCICR = (1 << PCIE2);
+}
+
 ISR (PCINT2_vect)
 {
-	// 割り込みごとにLEDを点滅
-	PORTC ^= (1 << PC0);
+	// Pin Change Interruptを無効化
+	PCICR = 0x00;
 	
-	PORTB = ~PIND;
+	// 割り込みごとにLEDを点滅（デバッグ用）
+	PORTC ^= (1 << PC0);
+		
+	prevSwitch = ~PIND;
+	
+	// Timer0を起動
+	TCCR0B = 0x05;	// プリスケーラ：1024
+	TCNT0 = 8;		// about: 1ms	
 }
 
 int main(void)
@@ -42,13 +67,17 @@ int main(void)
 	PORTC = (1 << PC0);
 	for (int i = 0; i < 8; i++) {
 		PORTB &= ~(1 << i);
-		_delay_ms(200);
+		_delay_ms(100);
 	}
 	PORTC = 0x00;
 		
 	// Pin Change Interruptの有効化
 	PCICR = (1 << PCIE2);
 	PCMSK2 = 0xFF;
+	
+	// TIMER0 オーバーフロー割り込みの有効化
+	TCCR0B = 0x00;	// Timer0停止
+	TIMSK0 = (1 << TOIE0);
 	
 	sei();
 	
